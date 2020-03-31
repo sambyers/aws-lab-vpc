@@ -42,6 +42,7 @@ If you want to use this for your lab, there are a few assumptions made by the sc
 - Replace ASA_MGMT_IP with the correct management IP for your ASA in the Ansible inventory.yaml file.
 - You will need a directory called vars in the cloned repo. Create it with mkdir vars.
 - I did not handle any secrets in these scripts. I'm not using vault for either Ansible or Terraform. When running the playbooks for the ASA, you will be prompted for the password. Terraform is gleaning credentials from AWS CLI configuration. You could easily change this to what you need.
+- IKEv1 Preshared Keys are stored in plain text in the ansible_vars.yaml file. This isn't a good idea and should not be done in production.
 
 ## Details
 ### Making the AWS VPC and IPSec VPN lab happens in this order via the [Makefile](/blob/master/Makefile) (make labvpc):
