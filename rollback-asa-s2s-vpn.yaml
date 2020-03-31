@@ -1,0 +1,92 @@
+---
+  - name: Rollback S2S IPSec VPN on ASA
+    gather_facts: true
+    hosts: all
+    vars_files:
+      - vars/ansible_vars.yaml
+    tasks:
+
+    - name: "Disable IKEv1 on outside interface"
+      asa_config:
+        lines:
+          - no crypto ikev1 enable outside
+
+    - name: "Remove IKEv1 Policy for tunnel #1"
+      asa_config:
+        lines:
+          - no crypto ikev1 policy 200
+
+    - name: "Remove IKEv1/IPSec Transform Set for tunnel #1"
+      asa_config:
+        lines:
+          - "no crypto ipsec ikev1 transform-set ipsec-prop-{{ vpn_id }}-0 esp-aes  esp-sha-hmac"
+    
+    - name: "Remove tunnel interface #1"
+      asa_config:
+        lines:
+          - no interface Tunnel1
+
+    - name: "Remove IPSec Profile for tunnel #1"
+      asa_config:
+        lines:
+          - "no crypto ipsec profile ipsec-{{ vpn_id }}-0"
+
+    - name: "Disable IPSec clearing of DF bit on outside interface"
+      asa_config:
+        lines:
+          - no crypto ipsec df-bit clear-df outside
+
+    - name: "Default TCP MSS to 1379 to prevent fragmentation"
+      asa_config:
+        lines:
+          - no sysopt connection tcpmss 1379
+
+    - name: "Default IPSec SA reply window size to allow out of order packets"
+      asa_config:
+        lines:
+          - no crypto ipsec security-association replay window-size 128
+
+    - name: "Disable fragmentation before encryption on outside interface"
+      asa_config:
+        lines:
+          - no crypto ipsec fragmentation before-encryption outside
+
+    - name: "Remove tunnel group for tunnel #1"
+      asa_config:
+        lines:
+          - "clear configure tunnel-group {{ tunnel1_address }}"
+
+    - name: "Remove BGP IPv4 config"
+      asa_config:
+        lines:
+          - "no router bgp {{ bgp_asn }}"
+
+    - name: "Remove IKEv1 Policy for tunnel #2"
+      asa_config:
+        lines:
+          - no crypto ikev1 policy 201
+
+    - name: "Remove IKEv1/IPSec Transform Set for tunnel #2"
+      asa_config:
+        lines:
+          - "no crypto ipsec ikev1 transform-set ipsec-prop-{{ vpn_id }}-1 esp-aes  esp-sha-hmac"
+    
+    - name: "Remove tunnel interface #2"
+      asa_config:
+        lines:
+          - no interface Tunnel2
+
+    - name: "Remove IPSec Profile for tunnel #2"
+      asa_config:
+        lines:
+          - "no crypto ipsec profile ipsec-{{ vpn_id }}-1"
+
+    - name: "Remove tunnel group for tunnel #2"
+      asa_config:
+        lines:
+          - "clear configure tunnel-group {{ tunnel2_address }}"
+          
+    - name: "Remove network object and NAT for AWS subnets"
+      asa_config:
+        lines:
+          - "no object network {{ vpc_id }}"

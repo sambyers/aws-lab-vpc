@@ -1,0 +1,47 @@
+---
+- name: Parser for ASA show ip address
+  parser_metadata:
+    version: 0.1
+    command: show ip address
+    network_os: asa
+
+- name: Match pattern for interface IP address lines
+  pattern_match:
+    regex: "^Interface"
+    match_all: yes
+    match_greedy: yes
+  register: lines
+
+- name: Match IP interface values
+  pattern_group:
+    - name: match interface
+      pattern_match:
+        regex: "((GigabitEthernet|Ethernet|TenGigabitEthernet|Management|Port-channel)(\\d+/\\d+\\.\\d+|\\d+/\\d+|\\d+))"
+        content: "{{ item }}"
+      register: interface
+    - name: match name
+      pattern_match:
+        regex: (\w+)(?=")
+        content: "{{ item }}"
+      register: name
+    - name: match address
+      pattern_match:
+        regex: "((\\d+\\.){3}(\\d+))"
+        content: "{{ item }}"
+      register: address
+
+  loop: "{{ lines }}"
+  register: interfaces
+
+- name: generate json data structure
+  json_template:
+    template:
+      - key: "{{ item.interface.matches.0 }}"
+        object:
+            - key: name
+              value: "{{ item.name.matches.0 }}"
+            - key: address
+              value: "{{ item.address.matches.0 }}"
+  loop: "{{ interfaces }}"
+  export: yes
+  register: interface_facts

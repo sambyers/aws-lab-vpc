@@ -1,0 +1,166 @@
+---
+  - name: Provision S2S IPSec VPN on ASA
+    gather_facts: true
+    hosts: all
+    vars_files:
+      - vars/ansible_vars.yaml
+    tasks:
+
+    - name: "Enable IKEv1 on outside interface"
+      asa_config:
+        lines:
+          - crypto ikev1 enable outside
+
+    - name: "Add IKEv1 Policy for tunnel #1"
+      asa_config:
+        lines:
+          - encryption aes
+          - authentication pre-share
+          - group 2
+          - lifetime 28800
+          - hash sha
+        parents: crypto ikev1 policy 200
+
+    - name: "Add IKEv1/IPSec Transform Set for tunnel #1"
+      asa_config:
+        lines:
+          - "crypto ipsec ikev1 transform-set ipsec-prop-{{ vpn_id }}-0 esp-aes  esp-sha-hmac"
+
+    - name: "Add IPSec Profile for tunnel #1"
+      asa_config:
+        lines:
+          - set pfs group2
+          - set security-association lifetime seconds 3600
+          - "set ikev1 transform-set ipsec-prop-{{ vpn_id }}-0"
+        parents: "crypto ipsec profile ipsec-{{ vpn_id }}-0"
+
+    - name: "Enable IPSec clearing of DF bit on outside interface"
+      asa_config:
+        lines:
+          - crypto ipsec df-bit clear-df outside
+
+    - name: "Adjust TCP MSS to 1379 to prevent fragmentation"
+      asa_config:
+        lines:
+          - sysopt connection tcpmss 1379
+
+    - name: "Adjust IPSec SA reply window size to allow out of order packets"
+      asa_config:
+        lines:
+          - crypto ipsec security-association replay window-size 128
+
+    - name: "Enable fragmentation before encryption on outside interface"
+      asa_config:
+        lines:
+          - crypto ipsec fragmentation before-encryption outside
+
+    - name: "Add tunnel group type ipsec-l2l for tunnel #1"
+      asa_config:
+        lines:
+          - "tunnel-group {{ tunnel1_address }} type ipsec-l2l"
+
+    - name: "Add tunnel group attributes for tunnel #1 -including PSK"
+      asa_config:
+        lines:
+          - "ikev1 pre-shared-key {{ tunnel1_preshared_key }}"
+          - isakmp keepalive threshold 10 retry 10
+        parents: "tunnel-group {{ tunnel1_address }} ipsec-attributes"
+
+    - name: "Add tunnel interface #1"
+      asa_config:
+        lines:
+          - "nameif Tunnel-int-{{ vpn_id }}-0"
+          - "ip address {{ tunnel1_cgw_inside_address }} 255.255.255.252"
+          - tunnel source interface outside
+          - "tunnel destination {{ tunnel1_address }}"
+          - tunnel mode ipsec ipv4
+          - "tunnel protection ipsec profile ipsec-{{ vpn_id }}-0"
+          - no shutdown
+        parents: interface Tunnel1
+
+    - name: "Add BGP IPv4 basic config"
+      asa_config:
+        lines:
+          - network 0.0.0.0
+          - no auto-summary
+          - no synchronization
+        parents:
+          - "router bgp {{ bgp_asn }}"
+          - address-family ipv4 unicast
+
+    - name: "Add BGP peering for tunnel #1"
+      asa_config:
+        lines:
+          - "neighbor {{ tunnel1_vgw_inside_address }} remote-as {{ tunnel1_bgp_asn }}"
+          - "neighbor {{ tunnel1_vgw_inside_address }} timers 10 30 30"
+          - "neighbor {{ tunnel1_vgw_inside_address }} default-originate"
+          - "neighbor {{ tunnel1_vgw_inside_address }} activate"
+        parents:
+          - "router bgp {{ bgp_asn }}"
+          - address-family ipv4 unicast
+
+    - name: "Add IKEv1 Policy for tunnel #2"
+      asa_config:
+        lines:
+          - encryption aes
+          - authentication pre-share
+          - group 2
+          - lifetime 28800
+          - hash sha
+        parents: crypto ikev1 policy 201
+
+    - name: "Add IKEv1/IPSec Transform Set for tunnel #2"
+      asa_config:
+        lines:
+          - "crypto ipsec ikev1 transform-set ipsec-prop-{{ vpn_id }}-1 esp-aes  esp-sha-hmac"
+
+    - name: "Add IPSec Profile for tunnel #2"
+      asa_config:
+        lines:
+          - set pfs group2
+          - set security-association lifetime seconds 3600
+          - "set ikev1 transform-set ipsec-prop-{{ vpn_id }}-1"
+        parents: "crypto ipsec profile ipsec-{{ vpn_id }}-1"
+
+    - name: "Add tunnel group type ipsec-l2l for tunnel #2"
+      asa_config:
+        lines:
+          - "tunnel-group {{ tunnel2_address }} type ipsec-l2l"
+
+    - name: "Add tunnel group attributes for tunnel #2 -including PSK"
+      asa_config:
+        lines:
+          - "ikev1 pre-shared-key {{ tunnel2_preshared_key }}"
+          - isakmp keepalive threshold 10 retry 10
+        parents: "tunnel-group {{ tunnel2_address }} ipsec-attributes"
+
+    - name: "Add tunnel interface #2"
+      asa_config:
+        lines:
+          - "nameif Tunnel-int-{{ vpn_id }}-1"
+          - "ip address {{ tunnel2_cgw_inside_address }} 255.255.255.252"
+          - tunnel source interface outside
+          - "tunnel destination {{ tunnel2_address }}"
+          - tunnel mode ipsec ipv4
+          - "tunnel protection ipsec profile ipsec-{{ vpn_id }}-1"
+          - no shutdown
+        parents: interface Tunnel2
+
+    - name: "Add BGP peering for tunnel #2"
+      asa_config:
+        lines:
+          - "neighbor {{ tunnel2_vgw_inside_address }} remote-as {{ tunnel2_bgp_asn }}"
+          - "neighbor {{ tunnel2_vgw_inside_address }} timers 10 30 30"
+          - "neighbor {{ tunnel2_vgw_inside_address }} default-originate"
+          - "neighbor {{ tunnel2_vgw_inside_address }} activate"
+        parents:
+          - "router bgp {{ bgp_asn }}"
+          - address-family ipv4 unicast
+
+    - name: "Add network object and NAT for AWS subnets"
+      asa_config:
+        lines:
+          - subnet 172.16.0.0 255.255.0.0
+          - nat (any,outside) dynamic interface
+        parents:
+          - "object network {{ vpc_id }}"

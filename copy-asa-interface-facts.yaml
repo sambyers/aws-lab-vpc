@@ -1,0 +1,25 @@
+---
+  - name: Record the IPv4 address of the interfaced named outside
+    gather_facts: true
+    hosts: all
+    tasks:
+
+    - name: Show Interface
+      register: show_interface
+      asa_command:
+        commands:
+          - show interface
+          
+    - name: Import the network-engine role
+      import_role:
+        name: ansible-network.network-engine
+          
+    - name: Parse ASA address output
+      command_parser:
+        file: "show-interface.yaml"
+        content: "{{ show_interface.stdout.0 }}"
+    
+    - name: Save interface facts
+      copy:
+        content: "{{ interface_facts }}"
+        dest: vars/custgw_address.json
