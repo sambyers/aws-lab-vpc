@@ -17,7 +17,7 @@ choco install terraform # Chocolately on Windows
 
 To bring up the lab VPC and VPN:
 ```
-make labvpn
+make labvpc
 ```
 Now that your lab VPC is up, create instances or whatever you're labbing. You'll have private access to resources over the VPN tunnels.
 
