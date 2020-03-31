@@ -1,4 +1,4 @@
-# AWS LAB VPN Automation
+# AWS LAB VPC Automation
 This repo holds the Terrform config and Ansible playbooks to bring up an AWS VPC and IPSec tunnels to a firewall.
 
 ## How to use
