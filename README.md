@@ -79,9 +79,3 @@ terraform destroy
 ```
 rm vars/custgw_address.json
 ```
-
-### Ansible details
-
-### Terraform details
-
-### Address parsing script details
