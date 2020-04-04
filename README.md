@@ -59,7 +59,7 @@ python scripts/address-parse.py
 ```
 - Terraform configuration applied to AWS account configured with AWS CLI. Terraform executes the instructions in labvpc.tf. The output of this configuration is vars/ansible_vars.yaml. It contains all of the vars for the IKEv1/IPSec VPN tunnels.
 ```
-terraform apply
+terraform apply -var-file=vars/custgw_address.json
 ```
 - Ansible playbook to provision ASA with IKEv1/IPSec configuration. The playbook consumes the vars/ansible_vars.yaml file for vars like IP addresses and PSKs.
 ```
