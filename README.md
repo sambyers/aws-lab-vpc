@@ -73,7 +73,7 @@ ansible-playbook rollback-asa-s2s-vpn.yaml
 ```
 - Terraform command to destroy the configuration created earlier. Terraform keeps its own state, so no need to maintain in a file.
 ```
-terraform destroy
+terraform destroy -var-file=vars/custgw_address.json
 ```
 - Remove old vars file:
 ```
