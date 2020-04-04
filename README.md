@@ -47,7 +47,7 @@ If you want to use this for your lab, there are a few assumptions made by the sc
 - You want to use the AWS IKEv1/IPSec VPN defaults.
 
 ## Details
-### Making the AWS VPC and IPSec VPN lab happens in this order via the [Makefile](/blob/master/Makefile) (make labvpc):
+### Making the AWS VPC and IPSec VPN lab happens in this order via the [Makefile](/Makefile) (make labvpc):
 
 - Ansible playbook to get interface facts from ASA. This creates a json file called custgw_address.json which contains the interface facts.
 ```
