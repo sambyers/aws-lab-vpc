@@ -6,7 +6,7 @@ botocore==1.15.30
 cffi==1.14.0
 cryptography==2.8
 docutils==0.15.2
-Jinja2==2.11.1
+Jinja2==2.11.3
 jmespath==0.9.5
 MarkupSafe==1.1.1
 netaddr==0.7.19
